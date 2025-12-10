@@ -18,7 +18,7 @@ public class BoardManager : MonoBehaviour
     CellData[,] boardData;
     Grid grid;
     
-    void Start()
+    public void Init()
     {
         tilemap = GetComponentInChildren<Tilemap>();
         grid = GetComponentInChildren<Grid>();
@@ -44,7 +44,7 @@ public class BoardManager : MonoBehaviour
                 tilemap.SetTile(new Vector3Int(x, y, 0), tile);
             }
         }
-        player.Spawn(this, new Vector2Int(1, 1));
+        // player.Spawn(this, new Vector2Int(1, 1));
     }
 
     Tile GetRandomTile(Tile[] tiles)

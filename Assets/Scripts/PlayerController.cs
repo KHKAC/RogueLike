@@ -54,6 +54,7 @@ public class PlayerController : MonoBehaviour
             BoardManager.CellData cellData = board.GetCellData(newCellTarget);
             if(cellData != null && cellData.passable)
             {
+                GameManager.Instance.TurnManager.Tick();
                 MoveTo(newCellTarget);
             }
         }
