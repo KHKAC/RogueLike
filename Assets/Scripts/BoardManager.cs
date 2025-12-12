@@ -7,7 +7,7 @@ public class BoardManager : MonoBehaviour
     public class CellData
     {
         public bool passable;
-        public GameObject containedObject;
+        public CellObject containedObject;
     }
 
     public int width;
@@ -15,12 +15,18 @@ public class BoardManager : MonoBehaviour
     public Tile[] groundTiles;
     public Tile[] wallTiles;
     public PlayerController player;
-    public GameObject foodPrefab;
+    public FoodObject foodPrefab;
+    // public GameObject[] foodPrefabs;
+    public Sprite[] foodSprites;
+    [Tooltip("최대 음식 수 포함")]
+    public int foodMaxCnt = 7;
+    public int foodMinCnt = 4;
 
     Tilemap tilemap;
     CellData[,] boardData;
     Grid grid;
     List<Vector2Int> emptyCellList;
+    int[] foodGranted = new int[]{ 5, 6, 7, 10, 11, 12};
     
     public void Init()
     {
@@ -79,7 +85,9 @@ public class BoardManager : MonoBehaviour
 
     void GenerateFood()
     {
-        int foodCount = 5;
+        // int foodCount = 5;
+        int foodCount = Random.Range(foodMinCnt, foodMaxCnt + 1);
+        Debug.Log($"Food : {foodCount}");
         for(int i = 0; i < foodCount; i++)
         {
             int randomIndex = Random.Range(0, emptyCellList.Count);
@@ -87,7 +95,12 @@ public class BoardManager : MonoBehaviour
 
             emptyCellList.RemoveAt(randomIndex);
             CellData data = boardData[coord.x, coord.y];
-            GameObject newFood = Instantiate(foodPrefab);
+
+            int foodType = Random.Range(0, foodSprites.Length);
+            foodPrefab.GetComponent<SpriteRenderer>().sprite = foodSprites[foodType];
+            foodPrefab.SetGrantedValue(foodGranted[foodType]);
+            FoodObject newFood = Instantiate(foodPrefab);
+            
             newFood.transform.position = CellToWorld(coord);
             data.containedObject = newFood;
         }
