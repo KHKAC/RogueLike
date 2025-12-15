@@ -504,6 +504,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7f880866a0aef354daada0ec6f641c7c, type: 2}
   player: {fileID: 2021863851368787263}
   foodPrefab: {fileID: -8150576890933168876, guid: 700f7d6f90c351744994d98687bea832, type: 3}
+  wallPrefab: {fileID: 2718076618535630733, guid: cf9d6aff54296084d946cb309d77cb1a, type: 3}
   foodSprites:
   - {fileID: 21300038, guid: fbe1e7b94bb1a4a099d5bcb15a00141c, type: 3}
   - {fileID: 21300036, guid: fbe1e7b94bb1a4a099d5bcb15a00141c, type: 3}
