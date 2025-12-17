@@ -3,25 +3,43 @@ using UnityEngine.Tilemaps;
 
 public class WallObject : CellObject
 {
-    public Tile obstacleTile;
-    public int maxHealth = 3;
-
+    [Tooltip("부서지는 벽 이미지 종류")]
+    public int MaxWallType = 3;
+    [Tooltip("MaxWallType의 두배로 설정")]
+    public Tile[] ObstacleTile;
+    public int MaxHealth = 3;
     int healthPoint;
+    int wallType;
     Tile originalTile;
-    public override void Init(Vector2Int iCell)
-    {
-        base.Init(iCell);
-        healthPoint = maxHealth;
-        originalTile = GameManager.Instance.boardManager.GetCellTile(cell);
-        GameManager.Instance.boardManager.SetCellTile(cell, obstacleTile);
-    }
 
+    public override void Init(Vector2Int inCell)
+    {
+        base.Init(inCell);
+        healthPoint = MaxHealth;
+        originalTile = GameManager.Instance.BoardManager.
+            GetCellTile(cell);
+        // MaxWallType중에 랜덤하게 하나를 고른다
+        wallType = Random.Range(0, MaxWallType);
+        GameManager.Instance.BoardManager.
+            SetCellTile(cell, ObstacleTile[wallType]);
+    }
     public override bool PlayerWantsToEnter()
     {
-        healthPoint -= 1;
-        if(healthPoint > 0) return false;
-        GameManager.Instance.boardManager.SetCellTile(cell, originalTile);
+        healthPoint--;
+        if (healthPoint > 0)
+        {
+            if (healthPoint == 1)
+            {
+                // 바꿀 타일의 인덱스는 MaxWallType만큼 떨어져 있다
+                int change = wallType + MaxWallType;
+                GameManager.Instance.BoardManager.
+                    SetCellTile(cell, ObstacleTile[change]);
+            }
+            return false;
+        }
+        GameManager.Instance.BoardManager.
+            SetCellTile(cell, originalTile);
         Destroy(gameObject);
-        return false;
+        return true;
     }
 }

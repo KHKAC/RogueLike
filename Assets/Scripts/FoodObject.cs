@@ -2,16 +2,11 @@ using UnityEngine;
 
 public class FoodObject : CellObject
 {
-    public int amountGranted = 10;
+    public int AmountGranted = 10;
+    public void SetGrantedValue(int value) => AmountGranted = value;
     public override void PlayerEntered()
     {
         Destroy(gameObject);
-        Debug.Log("Food increased");
-        GameManager.Instance.ChangeFood(amountGranted);
-    }
-
-    public void SetGrantedValue(int value)
-    {
-        amountGranted = value;
+        GameManager.Instance.ChangeFood(AmountGranted);
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -6,62 +7,84 @@ public class BoardManager : MonoBehaviour
 {
     public class CellData
     {
-        public bool passable;
-        public CellObject containedObject;
+        public bool Passable;
+        public CellObject ContainedObject;
     }
 
-    public int width;
-    public int height;
-    public Tile[] groundTiles;
-    public Tile[] wallTiles;
-    public PlayerController player;
-    public FoodObject foodPrefab;
-    public WallObject wallPrefab;
-    // public GameObject[] foodPrefabs;
-    public Sprite[] foodSprites;
-    [Tooltip("최대 음식 수 포함")]
-    public int foodMaxCnt = 7;
-    public int foodMinCnt = 4;
+    readonly int[] foodGranted = new int[]{5,6,7,10,11,12};
+    
+    public int Width;
+    public int Height;
+    public Tile[] GroundTiles;
+    public Tile[] WallTiles;
+    public PlayerController Player;
+    public FoodObject FoodPrefab;
+    public WallObject WallPrefab;
+    public ExitObject ExitPrefab;
+    public Sprite[] FoodSprite;
+    public int MinFood = 2;
+    [Tooltip("음식 최대 수(포함)")]
+    public int MaxFood = 5;
 
     Tilemap tilemap;
     CellData[,] boardData;
     Grid grid;
     List<Vector2Int> emptyCellList;
-    int[] foodGranted = new int[]{ 5, 6, 7, 10, 11, 12 };
     
     public void Init()
     {
         tilemap = GetComponentInChildren<Tilemap>();
         grid = GetComponentInChildren<Grid>();
         emptyCellList = new List<Vector2Int>();
-        boardData = new CellData[width, height];
+        boardData = new CellData[Width, Height];
 
-        for(int y = 0; y < height; y++)
+        for (int y = 0; y < Height; y++)
         {
-            for(int x = 0; x < width; x++)
+            for (int x = 0; x < Width; x++)
             {
                 Tile tile;
                 boardData[x, y] = new CellData();
-                if(x == 0 || y == 0 || x == width -1 || y == height -1)
+                if (x == 0 || y == 0 || x == Width - 1 || y == Height - 1)
                 {
-                    // tile = wallTiles[Random.Range(0, wallTiles.Length)];
-                    tile = GetRandomTile(wallTiles);
-                    boardData[x,y].passable = false;
+                    tile = GetRandomTile(WallTiles);
+                    boardData[x, y].Passable = false;
                 }
                 else
                 {
-                    // tile = groundTiles[Random.Range(0, groundTiles.Length)];
-                    tile = GetRandomTile(groundTiles);
-                    boardData[x,y].passable = true;
+                    tile = GetRandomTile(GroundTiles);
+                    boardData[x, y].Passable = true;
                     emptyCellList.Add(new Vector2Int(x, y));
                 }
                 tilemap.SetTile(new Vector3Int(x, y, 0), tile);
             }
         }
-        // player.Spawn(this, new Vector2Int(1, 1));
         emptyCellList.Remove(new Vector2Int(1, 1));
+
+        // Exit
+        Vector2Int endCoord = new Vector2Int(Width - 2, Height - 2);
+        AddObject(Instantiate(ExitPrefab), endCoord);
+        emptyCellList.Remove(endCoord);
+
         GenerateWall();
         GenerateFood();
+    }
+
+    public void Clean()
+    {
+        if (boardData == null) return;
+
+        for (int y = 0; y < Height; y++)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                var CellData = boardData[x, y];
+                if (CellData.ContainedObject != null)
+                {
+                    Destroy(CellData.ContainedObject.gameObject);
+                }
+                SetCellTile(new Vector2Int(x, y), null);
+            }
+        }    
     }
 
     Tile GetRandomTile(Tile[] tiles)
@@ -69,7 +92,6 @@ public class BoardManager : MonoBehaviour
         return tiles[Random.Range(0, tiles.Length)];
     }
 
-    
     public Vector3 CellToWorld(Vector2Int cellIndex)
     {
         return grid.GetCellCenterWorld((Vector3Int)cellIndex);
@@ -77,50 +99,50 @@ public class BoardManager : MonoBehaviour
 
     public CellData GetCellData(Vector2Int cellIndex)
     {
-        if(cellIndex.x < 0 || cellIndex.x > width || cellIndex.y < 0 || cellIndex.y > height)
+        if (cellIndex.x < 0 || cellIndex.x >= Width
+            || cellIndex.y < 0 || cellIndex.y >= Height)
         {
             return null;
-        }
-        
+        }    
         return boardData[cellIndex.x, cellIndex.y];
     }
 
     public void SetCellTile(Vector2Int cellIndex, Tile tile)
     {
-        tilemap.SetTile(new Vector3Int(cellIndex.x, cellIndex.y, 0), tile);
+        tilemap.SetTile(new Vector3Int(
+            cellIndex.x, cellIndex.y, 0), tile);    
     }
 
     public Tile GetCellTile(Vector2Int cellIndex)
     {
-        return tilemap.GetTile<Tile>(new Vector3Int(cellIndex.x, cellIndex.y, 0));
+        return tilemap.GetTile<Tile>
+            (new Vector3Int(cellIndex.x, cellIndex.y, 0));
     }
-
+    
     void AddObject(CellObject obj, Vector2Int coord)
     {
         CellData data = boardData[coord.x, coord.y];
         obj.transform.position = CellToWorld(coord);
-        data.containedObject = obj;
+        data.ContainedObject = obj;
         obj.Init(coord);
     }
 
     void GenerateFood()
     {
-        // int foodCount = 5;
-        int foodCount = Random.Range(foodMinCnt, foodMaxCnt + 1);
-        Debug.Log($"Food : {foodCount}");
-        for(int i = 0; i < foodCount; i++)
+        int foodCount = Random.Range(MinFood, MaxFood + 1);
+        Debug.Log($"Food count : {foodCount}");
+        for (int i = 0; i < foodCount; i++)
         {
             int randomIndex = Random.Range(0, emptyCellList.Count);
             Vector2Int coord = emptyCellList[randomIndex];
 
             emptyCellList.RemoveAt(randomIndex);
             CellData data = boardData[coord.x, coord.y];
-
-            int foodType = Random.Range(0, foodSprites.Length);
-            foodPrefab.GetComponent<SpriteRenderer>().sprite = foodSprites[foodType];
-            foodPrefab.SetGrantedValue(foodGranted[foodType]);
-            FoodObject newFood = Instantiate(foodPrefab);
-            
+            int foodType = Random.Range(0, FoodSprite.Length);
+            FoodPrefab.GetComponent<SpriteRenderer>().sprite 
+                = FoodSprite[foodType];
+            FoodPrefab.SetGrantedValue(foodGranted[foodType]);
+            FoodObject newFood = Instantiate(FoodPrefab);
             AddObject(newFood, coord);
         }
     }
@@ -128,13 +150,13 @@ public class BoardManager : MonoBehaviour
     void GenerateWall()
     {
         int wallCount = Random.Range(6, 10);
-        for(int i = 0; i< wallCount; i++)
+        for (int i = 0; i < wallCount; i++)
         {
             int randomIndex = Random.Range(0, emptyCellList.Count);
             Vector2Int coord = emptyCellList[randomIndex];
 
             emptyCellList.RemoveAt(randomIndex);
-            WallObject newWall = Instantiate(wallPrefab);
+            WallObject newWall = Instantiate(WallPrefab);
             AddObject(newWall, coord);
         }
     }
