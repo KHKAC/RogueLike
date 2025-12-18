@@ -12,10 +12,14 @@ public class PlayerController : MonoBehaviour
     bool isGameOver;
     bool isMoving;
     float moveSpeed = 3.0f;
+    SpriteRenderer sr;
+
+    public Vector2Int Cell => cellPosition;
 
     void Awake()
     {
         anim = GetComponent<Animator>();
+        sr = GetComponent<SpriteRenderer>();
     }
 
     public void Init()
@@ -49,6 +53,7 @@ public class PlayerController : MonoBehaviour
     public void GameOver()
     {
         isGameOver = true;
+        anim.enabled = false;
     }
 
     void Update()
@@ -78,11 +83,13 @@ public class PlayerController : MonoBehaviour
         else if (Keyboard.current.rightArrowKey.wasPressedThisFrame)
         {
             newCellTarget.x++;
+            sr.flipX = false;
             hasMoved = true;
         }
         else if (Keyboard.current.leftArrowKey.wasPressedThisFrame)
         {
             newCellTarget.x--;
+            sr.flipX = true;
             hasMoved = true;
         }
 
