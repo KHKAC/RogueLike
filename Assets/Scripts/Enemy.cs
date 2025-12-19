@@ -1,14 +1,28 @@
+using System.Collections;
+using TreeEditor;
 using Unity.Mathematics;
 using UnityEngine;
 
 public class Enemy : CellObject
 {
+    readonly int hashMove = Animator.StringToHash("MOVING");
+    readonly int hashAttack = Animator.StringToHash("ATTACK");
+    readonly int hashDamage = Animator.StringToHash("DAMAGE");
+
     public int health = 3;
 
     int currentHealth;
+    Vector3 moveTarget;
+    Animator anim;
+    SpriteRenderer sr;
+    bool isMoving;
+    float moveSpeed = 3.0f;
+
 
     void Awake()
     {
+        anim = GetComponent<Animator>();
+        sr = GetComponent<SpriteRenderer>();
         GameManager.Instance.TurnManager.OnTick += TurnHappened;
     }
 
@@ -29,13 +43,15 @@ public class Enemy : CellObject
 
         if(currentHealth <= 0)
         {
+            // 몬스터가 죽었을 때 Food 증가
+            GameManager.Instance.ChangeFood(4);
             Destroy(gameObject);
         }
 
         return false;
     }
 
-    bool MoveTo(Vector2Int coord)
+    bool MoveTo(Vector2Int coord, bool immediate = false)
     {
         var board = GameManager.Instance.BoardManager;
         var targetCell = board.GetCellData(coord);
@@ -50,9 +66,31 @@ public class Enemy : CellObject
 
         targetCell.ContainedObject = this;
         cell = coord;
-        transform.position = board.CellToWorld(coord);
+        if(immediate)
+        {
+            isMoving = false;
+            transform.position = board.CellToWorld(cell);
+        }
+        else
+        {
+            isMoving = true;
+            moveTarget = board.CellToWorld(cell);
+        }
+        anim.SetBool(hashMove, isMoving);
 
         return true;
+    }
+
+    IEnumerator AttackToPlayer()
+    {
+        if(currentHealth <= 0) yield return null;
+        GameManager.Instance.PlayerController.Lock = true;
+        yield return new WaitForSeconds(1f);
+        anim.SetTrigger(hashAttack);
+        GameManager.Instance.ChangeFood(-3);
+        GameManager.Instance.PlayerController.GetDamage();
+        yield return new WaitForSeconds(1f);
+        GameManager.Instance.PlayerController.Lock = false;
     }
 
     void TurnHappened()
@@ -61,12 +99,14 @@ public class Enemy : CellObject
         int xDist = playerCell.x - cell.x;
         int yDist = playerCell.y - cell.y;
 
+        sr.flipX = xDist > 0;
+
         int absXDist = Mathf.Abs(xDist);
         int absYDist = Mathf.Abs(yDist);
 
         if((xDist == 0 && absYDist == 1) || (yDist == 0 && absXDist == 1))
         {
-            GameManager.Instance.ChangeFood(-3);
+            StartCoroutine(AttackToPlayer());
         }
         else
         {
@@ -79,10 +119,10 @@ public class Enemy : CellObject
             }
             else
             {
-                 if (!TryMoveInY(yDist))
-              {
-                  TryMoveInX(xDist);
-              }
+                if (!TryMoveInY(yDist))
+                {
+                    TryMoveInX(xDist);
+                }
             }
         }
     }
@@ -103,5 +143,18 @@ public class Enemy : CellObject
             return MoveTo(cell + Vector2Int.up);
         }
         return MoveTo(cell + Vector2Int.down);
+    }
+
+    void Update()
+    {
+        if(isMoving)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, moveTarget, moveSpeed * Time.deltaTime);
+            if(transform.position == moveTarget)
+            {
+                isMoving = false;
+                anim.SetBool(hashMove, false);
+            }
+        }
     }
 }
