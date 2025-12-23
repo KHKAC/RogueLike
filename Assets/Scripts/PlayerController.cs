@@ -5,21 +5,19 @@ public class PlayerController : MonoBehaviour
 {
     readonly int hashMove = Animator.StringToHash("MOVING");
     readonly int hashAttack = Animator.StringToHash("ATTACK");
-    readonly int hashDamage = Animator.StringToHash("DAMAGE");
-
+    readonly int hashDamage = Animator.StringToHash("DAMAGE"); 
     BoardManager board;
     Vector2Int cellPosition;
     Vector3 moveTarget;
     Animator anim;
+    SpriteRenderer sr; // 왼쪽 이동/공격 모션을 위해 추가
     bool isGameOver;
     bool isMoving;
     float moveSpeed = 3.0f;
-    SpriteRenderer sr;
 
     public bool Lock { get; set; }
     public Vector2Int Cell => cellPosition;
-    
-    public void GetDamage() => anim.SetTrigger(hashDamage);
+    public void GetDamage() => anim.SetTrigger(hashDamage);    
 
     void Awake()
     {
@@ -46,7 +44,6 @@ public class PlayerController : MonoBehaviour
         if (immediate)
         {
             isMoving = false;
-            
             transform.position = board.CellToWorld(cellPosition);
         }
         else
@@ -60,12 +57,14 @@ public class PlayerController : MonoBehaviour
     public void GameOver()
     {
         isGameOver = true;
+        // 게임오버시 플레이어 행동 멈추기
         anim.enabled = false;
     }
 
     void Update()
     {
         if (Lock) return;
+        
         if (isGameOver)
         {
             if (Keyboard.current.enterKey.wasPressedThisFrame)
@@ -91,14 +90,14 @@ public class PlayerController : MonoBehaviour
         else if (Keyboard.current.rightArrowKey.wasPressedThisFrame)
         {
             newCellTarget.x++;
-            sr.flipX = false;
             hasMoved = true;
+            sr.flipX = false; // 오른쪽 보기
         }
         else if (Keyboard.current.leftArrowKey.wasPressedThisFrame)
         {
             newCellTarget.x--;
-            sr.flipX = true;
             hasMoved = true;
+            sr.flipX = true; // 왼쪽 보기
         }
 
         if (isMoving)
@@ -124,12 +123,11 @@ public class PlayerController : MonoBehaviour
                 = board.GetCellData(newCellTarget);
             if (cellData != null && cellData.Passable)
             {
-                GameManager.Instance.TurnManager.Tick();
                 if (cellData.ContainedObject == null)
                 {
                     MoveTo(newCellTarget, false);
                 }
-                else 
+                else
                 {
                     if (cellData.ContainedObject.PlayerWantsToEnter())
                     {
@@ -141,6 +139,7 @@ public class PlayerController : MonoBehaviour
                         anim.SetTrigger(hashAttack);
                     }
                 }
+                GameManager.Instance.TurnManager.Tick();
             }
         }
     }
